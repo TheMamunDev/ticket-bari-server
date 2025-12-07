@@ -1,9 +1,21 @@
+const { ObjectId } = require('mongodb');
 const { db } = require('../config/db.js');
 const ticketsCollection = db.collection('tickets');
 
 const getAllTickets = async (req, res) => {
   const result = await ticketsCollection.find().toArray();
   res.status(200).send(result);
+};
+
+const getTicket = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) };
+    const result = await ticketsCollection.findOne(query);
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 const getFeaturedTickets = async (req, res) => {
@@ -18,13 +30,26 @@ const getFeaturedTickets = async (req, res) => {
   }
 };
 
+const getLatestTickets = async (req, res) => {
+  try {
+    const result = await ticketsCollection
+      .find()
+      .sort({ createdAt: -1 })
+      .limit(8)
+      .toArray();
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ error: error.message });
+  }
+};
+
 const updateMany = async (req, res) => {
   try {
     const result = await ticketsCollection.updateMany(
-      { from: 'Dhaka' },
+      {},
       {
         $set: {
-          featured: true,
+          createdAt: new Date(),
         },
       }
     );
@@ -38,4 +63,10 @@ const updateMany = async (req, res) => {
   }
 };
 
-module.exports = { getAllTickets, updateMany, getFeaturedTickets };
+module.exports = {
+  getAllTickets,
+  updateMany,
+  getFeaturedTickets,
+  getLatestTickets,
+  getTicket,
+};
