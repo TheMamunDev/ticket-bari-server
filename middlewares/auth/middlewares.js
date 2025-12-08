@@ -4,7 +4,7 @@ const admin = require('firebase-admin');
 
 const verifyToken = async (req, res, next) => {
   const token = req.headers.authorization;
-  console.log(token);
+  // console.log(token);
   if (!token) {
     return res.status(401).send({ message: 'unauthorized access' });
   }
@@ -12,7 +12,7 @@ const verifyToken = async (req, res, next) => {
     const idToken = token.split(' ')[1];
     const decoded = await admin.auth().verifyIdToken(idToken);
     req.decoded_email = decoded.email;
-    console.log(decoded);
+    // console.log(decoded);
   } catch (err) {
     return res.status(401).send({ message: 'unauthorized access' });
   }

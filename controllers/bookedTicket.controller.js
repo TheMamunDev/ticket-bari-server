@@ -5,7 +5,8 @@ const bookedTicketsCollection = db.collection('bookings');
 
 const bookTicket = async (req, res) => {
   try {
-    const ticket = req.body;
+    const data = req.body;
+    const ticket = { ...data, paymentStatus: 'pending' };
     const result = await bookedTicketsCollection.insertOne(ticket);
     res.status(200).send(result);
   } catch (error) {
