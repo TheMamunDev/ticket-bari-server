@@ -76,7 +76,7 @@ const paymentSuccess = async (req, res) => {
       { _id: new ObjectId(bookingId) },
       {
         $set: {
-          paymentStatus: 'paid',
+          status: 'paid',
           paidAt: new Date(),
         },
       }
@@ -95,6 +95,7 @@ const paymentSuccess = async (req, res) => {
     const paymentInfo = {
       bookingId: bookingId,
       ticketId: session.metadata.ticketId,
+      ticketTitle: ticket.title,
       userEmail: session.customer_email,
       amount: session.amount_total / 100,
       transactionId: session.payment_intent,

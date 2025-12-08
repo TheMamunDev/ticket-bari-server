@@ -21,7 +21,7 @@ const getTicket = async (req, res) => {
 const getFeaturedTickets = async (req, res) => {
   try {
     const result = await ticketsCollection
-      .find({ featured: true })
+      .find({ isAdvertised: true })
       .limit(6)
       .toArray();
     res.status(200).send(result);
@@ -43,13 +43,27 @@ const getLatestTickets = async (req, res) => {
   }
 };
 
+const addTicket = async (req, res) => {
+  try {
+    const ticket = req.body;
+    console.log(ticket);
+    const result = await ticketsCollection.insertOne(ticket);
+    res.send({
+      message: 'Ticket added successfully',
+      result,
+    });
+  } catch (error) {
+    res.status(500).send({ error: error.message });
+  }
+};
+
 const updateMany = async (req, res) => {
   try {
     const result = await ticketsCollection.updateMany(
       {},
       {
         $set: {
-          createdAt: new Date(),
+          isAdvertised: true,
         },
       }
     );
@@ -69,4 +83,5 @@ module.exports = {
   getFeaturedTickets,
   getLatestTickets,
   getTicket,
+  addTicket,
 };
