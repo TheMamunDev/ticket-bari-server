@@ -43,6 +43,17 @@ const getLatestTickets = async (req, res) => {
   }
 };
 
+const vendorTickets = async (req, res) => {
+  try {
+    const email = req.params.email;
+    const query = { vendorEmail: email };
+    const result = await ticketsCollection.find(query).toArray();
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 const addTicket = async (req, res) => {
   try {
     const ticket = req.body;
@@ -57,31 +68,41 @@ const addTicket = async (req, res) => {
   }
 };
 
-const updateMany = async (req, res) => {
+const updateTicket = async (req, res) => {
   try {
-    const result = await ticketsCollection.updateMany(
-      {},
-      {
-        $set: {
-          isAdvertised: true,
-        },
-      }
-    );
-
-    res.send({
-      message: 'Updated successfully',
-      result,
-    });
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) };
+    console.log(query);
+    const { _id, ...data } = req.body;
+    console.log(data);
+    const updatedData = {
+      $set: data,
+    };
+    const result = await ticketsCollection.updateOne(query, updatedData);
+    res.send(result);
   } catch (error) {
     res.status(500).send({ error: error.message });
   }
 };
 
+const deleteTicket = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) };
+    const result = await ticketsCollection.deleteOne(query);
+    res.send(result);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 module.exports = {
   getAllTickets,
-  updateMany,
+  updateTicket,
   getFeaturedTickets,
   getLatestTickets,
   getTicket,
   addTicket,
+  vendorTickets,
+  deleteTicket,
 };

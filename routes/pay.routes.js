@@ -4,6 +4,6 @@ const { payment, paymentSuccess } = require('../controllers/pay.controller.js');
 const { verifyToken } = require('../middlewares/auth/middlewares.js');
 
 router.post('/', verifyToken, payment);
-router.get('/', verifyToken, paymentSuccess);
+router.patch('/', verifyToken, paymentSuccess);
 
 module.exports = router;

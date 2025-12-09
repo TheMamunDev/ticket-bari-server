@@ -44,20 +44,23 @@ const paymentSuccess = async (req, res) => {
   const sessionId = req.query.session_id;
   const session = await stripe.checkout.sessions.retrieve(sessionId);
   const transactionId = session.payment_intent;
+
   if (session.payment_status === 'paid') {
+    const bookingId = session.metadata.bookingId;
+    const quantity = Number(session.metadata.quantity);
+
     const paymentExist = await paymentsCollection.findOne({
-      transactionId: transactionId,
+      transactionId: session.payment_intent,
     });
+    console.log(paymentExist);
     if (paymentExist) {
       return res.send({
         success: false,
         meassage: 'Payment already done',
-        transactionId: transactionId,
+        transactionId: session.payment_intent,
       });
     }
 
-    const bookingId = session.metadata.bookingId;
-    const quantity = Number(session.metadata.quantity);
     const ticket = await ticketsCollection.findOne({
       _id: new ObjectId(session.metadata.ticketId),
     });
@@ -98,11 +101,12 @@ const paymentSuccess = async (req, res) => {
       ticketTitle: ticket.title,
       userEmail: session.customer_email,
       amount: session.amount_total / 100,
-      transactionId: session.payment_intent,
+      transactionId: transactionId,
       paymentStatus: 'paid',
       paidAt: new Date(),
     };
     const paymentResult = await paymentsCollection.insertOne(paymentInfo);
+    console.log(paymentResult);
     return res.send({
       success: true,
       modifiedInfo: paymentInfo,

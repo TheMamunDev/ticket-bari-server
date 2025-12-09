@@ -62,7 +62,36 @@ const getBookedTickets = async (req, res) => {
   }
 };
 
+const getBookingByVendor = async (req, res) => {
+  try {
+    const email = req.params.email;
+    const query = { vendorEmail: email };
+    const result = await bookedTicketsCollection.find(query).toArray();
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const updateTicket = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) };
+    const { status } = req.body;
+    const updatedData = {
+      $set: { status },
+    };
+
+    const result = await bookedTicketsCollection.updateOne(query, updatedData);
+    res.send({ result, status });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 module.exports = {
   bookTicket,
   getBookedTickets,
+  getBookingByVendor,
+  updateTicket,
 };
