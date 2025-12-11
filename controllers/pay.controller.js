@@ -49,25 +49,23 @@ const paymentSuccess = async (req, res) => {
     const bookingId = session.metadata.bookingId;
     const quantity = Number(session.metadata.quantity);
 
-    const paymentExist = await paymentsCollection.findOne({
-      transactionId: session.payment_intent,
-    });
-    console.log(paymentExist);
+    const paymentExist = await paymentsCollection.findOne({ transactionId });
+
     if (paymentExist) {
       return res.send({
         success: false,
-        meassage: 'Payment already done',
-        transactionId: session.payment_intent,
+        message: 'Payment already done',
+        transactionId: transactionId,
       });
     }
 
     const ticket = await ticketsCollection.findOne({
       _id: new ObjectId(session.metadata.ticketId),
     });
+
     if (!ticket) {
       return res.send({ success: false, message: 'Ticket not found' });
     }
-
     if (ticket.quantity < quantity) {
       return res.send({
         success: false,
@@ -75,25 +73,6 @@ const paymentSuccess = async (req, res) => {
         available: ticket.quantity,
       });
     }
-    const result = await bookedTicketsCollection.updateOne(
-      { _id: new ObjectId(bookingId) },
-      {
-        $set: {
-          status: 'paid',
-          paidAt: new Date(),
-        },
-      }
-    );
-    const newQuantity = ticket.quantity - quantity;
-
-    const ticketUpdate = await ticketsCollection.updateOne(
-      { _id: new ObjectId(session.metadata.ticketId) },
-      {
-        $set: {
-          quantity: newQuantity,
-        },
-      }
-    );
 
     const paymentInfo = {
       bookingId: bookingId,
@@ -105,13 +84,33 @@ const paymentSuccess = async (req, res) => {
       paymentStatus: 'paid',
       paidAt: new Date(),
     };
-    const paymentResult = await paymentsCollection.insertOne(paymentInfo);
-    console.log(paymentResult);
-    return res.send({
-      success: true,
-      modifiedInfo: paymentInfo,
-      paymentResult: paymentResult,
-    });
+    try {
+      const paymentResult = await paymentsCollection.insertOne(paymentInfo);
+      await bookedTicketsCollection.updateOne(
+        { _id: new ObjectId(bookingId) },
+        { $set: { status: 'paid', paidAt: new Date() } }
+      );
+
+      const newQuantity = ticket.quantity - quantity;
+      await ticketsCollection.updateOne(
+        { _id: new ObjectId(session.metadata.ticketId) },
+        { $set: { quantity: newQuantity } }
+      );
+      return res.send({
+        success: true,
+        modifiedInfo: paymentInfo,
+        paymentResult: paymentResult,
+      });
+    } catch (error) {
+      if (error.code === 11000) {
+        return res.send({
+          success: false,
+          message: 'Payment already processed (Duplicate Prevention)',
+        });
+      }
+      console.error(error);
+      return res.send({ success: false, message: 'Internal Server Error' });
+    }
   }
   res.send({ success: false });
 };

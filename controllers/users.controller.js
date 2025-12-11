@@ -1,10 +1,21 @@
+const { ObjectId } = require('mongodb');
 const { db } = require('../config/db.js');
 const usersCollection = db.collection('users');
+const ticketsCollection = db.collection('tickets');
 
 const getUser = async (req, res) => {
   const email = req.params.email;
   const result = await usersCollection.findOne({ email: email });
   res.status(200).send(result);
+};
+
+const getAllUsers = async (req, res) => {
+  try {
+    const result = await usersCollection.find().toArray();
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 const getUserRole = async (req, res) => {
@@ -50,9 +61,69 @@ const updateUser = async (req, res) => {
     res.status(500).send({ error: 'Failed to update user' });
   }
 };
+
+// update role by admin
+
+const updateRole = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) };
+    const data = req.body;
+    const newData = {};
+    if (data.user.role === 'admin') {
+      const totalAdmins = await usersCollection.countDocuments({
+        role: 'admin',
+      });
+      if (totalAdmins === 1 && data.status !== 'admin') {
+        return res.status(409).json({
+          message: 'You cannot remove this admin at this moment. ',
+        });
+      }
+    }
+    if (data.status === 'vendor') {
+      newData.isFraud = false;
+    }
+    const updatedData = {
+      $set: { ...newData, role: data.status },
+    };
+    const result = await usersCollection.updateOne(query, updatedData);
+    res.send(result);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const markVendorAsFraud = async (req, res) => {
+  const id = req.params;
+  const data = req.body;
+  const query = { _id: new ObjectId(id) };
+  try {
+    const updatedData = {
+      $set: { isFraud: true },
+    };
+    const updatedUser = await usersCollection.updateOne(query, updatedData);
+    const result = await ticketsCollection.updateMany(
+      { vendorEmail: data.user.email },
+      {
+        $set: {
+          status: 'rejected',
+          isAdvertised: false,
+          feedback: 'Vendor marked as Fraud by Admin',
+        },
+      }
+    );
+    res.status(200).send({ updatedUser: updatedUser, updateTicket: result });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
 module.exports = {
   getUser,
   insertUser,
   getUserRole,
   updateUser,
+  getAllUsers,
+  updateRole,
+  markVendorAsFraud,
 };

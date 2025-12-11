@@ -1,10 +1,78 @@
 const { ObjectId } = require('mongodb');
 const { db } = require('../config/db.js');
 const ticketsCollection = db.collection('tickets');
+const usersCollection = db.collection('users');
 
 const getAllTickets = async (req, res) => {
-  const result = await ticketsCollection.find().toArray();
-  res.status(200).send(result);
+  try {
+    const {
+      from,
+      to,
+      date,
+      transport: category,
+      sort,
+      page = 1,
+      limit = 9,
+    } = req.query;
+    const query = { status: 'approved' };
+    const orConditions = [];
+    if (from) {
+      orConditions.push({ from: { $regex: from, $options: 'i' } });
+      orConditions.push({ title: { $regex: from, $options: 'i' } });
+    }
+    if (to) {
+      orConditions.push({ to: { $regex: to, $options: 'i' } });
+      orConditions.push({ title: { $regex: to, $options: 'i' } });
+    }
+    if (orConditions.length > 0) query.$or = orConditions;
+    if (category && category !== 'All') {
+      query.transportType = { $regex: category, $options: 'i' };
+    }
+    if (date) query.departureDate = date;
+    let sortObj = { createdAt: -1 };
+
+    if (sort === 'price-asc') sortObj = { price: 1 };
+    else if (sort === 'price-desc') sortObj = { price: -1 };
+    else if (sort === 'Default') sortObj = { createdAt: -1 };
+    const skip = (page - 1) * limit;
+
+    const totalItems = await ticketsCollection.countDocuments(query);
+    const categories = await ticketsCollection.distinct('transportType');
+    const result = await ticketsCollection
+      .find(query)
+      .sort(sortObj)
+      .skip(skip)
+      .limit(10)
+      .toArray();
+    res.status(200).send({
+      result,
+      categories,
+      totalItems,
+      totalPages: Math.ceil(totalItems / limit),
+      currentPage: page,
+      perPage: limit,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: 'Server error' });
+  }
+};
+
+const getTickets = async (req, res) => {
+  const status = req.query.status;
+  const query = {};
+  if (status) {
+    query.status = status;
+  }
+  try {
+    const result = await ticketsCollection
+      .find(query)
+      .sort({ createdAt: -1 })
+      .toArray();
+    res.status(200).send(result);
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 const getTicket = async (req, res) => {
@@ -33,7 +101,7 @@ const getFeaturedTickets = async (req, res) => {
 const getLatestTickets = async (req, res) => {
   try {
     const result = await ticketsCollection
-      .find()
+      .find({ status: 'approved' })
       .sort({ createdAt: -1 })
       .limit(8)
       .toArray();
@@ -58,6 +126,13 @@ const addTicket = async (req, res) => {
   try {
     const ticket = req.body;
     console.log(ticket);
+    const user = await usersCollection.findOne({ email: req.decoded_email });
+
+    if (user.isFraud) {
+      return res.status(409).send({
+        message: 'Your account is flagged for fraud. You cannot add tickets.',
+      });
+    }
     const result = await ticketsCollection.insertOne(ticket);
     res.send({
       message: 'Ticket added successfully',
@@ -72,7 +147,6 @@ const updateTicket = async (req, res) => {
   try {
     const id = req.params.id;
     const query = { _id: new ObjectId(id) };
-    console.log(query);
     const { _id, ...data } = req.body;
     console.log(data);
     const updatedData = {
@@ -82,6 +156,22 @@ const updateTicket = async (req, res) => {
     res.send(result);
   } catch (error) {
     res.status(500).send({ error: error.message });
+  }
+};
+
+// update ticket status by admin
+const statusUpdate = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) };
+    const { _id, ...data } = req.body;
+    const updatedData = {
+      $set: { status: data.status },
+    };
+    const result = await ticketsCollection.updateOne(query, updatedData);
+    res.send(result);
+  } catch (error) {
+    console.log(error);
   }
 };
 
@@ -96,6 +186,45 @@ const deleteTicket = async (req, res) => {
   }
 };
 
+const setAdverties = async (req, res) => {
+  const id = req.params;
+  const { currentStatus } = req.body;
+  try {
+    if (currentStatus === true) {
+      const currentCount = await ticketsCollection.countDocuments({
+        isAdvertised: true,
+      });
+      if (currentCount >= 6) {
+        return res.status(400).json({
+          success: false,
+          message:
+            'Limit Reached: You can only advertise up to 6 tickets. Please unadvertise one first.',
+        });
+      }
+    }
+
+    const filter = { _id: new ObjectId(id) };
+    const updateDoc = {
+      $set: {
+        isAdvertised: currentStatus,
+      },
+    };
+
+    const result = await ticketsCollection.updateOne(filter, updateDoc);
+
+    res.status(200).send({
+      success: true,
+      message: currentStatus
+        ? 'Ticket is now Live on Home.'
+        : 'Ticket removed from Home.',
+      data: result,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
 module.exports = {
   getAllTickets,
   updateTicket,
@@ -105,4 +234,7 @@ module.exports = {
   addTicket,
   vendorTickets,
   deleteTicket,
+  getTickets,
+  statusUpdate,
+  setAdverties,
 };

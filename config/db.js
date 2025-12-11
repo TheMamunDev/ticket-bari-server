@@ -5,7 +5,7 @@ const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
-    strict: true,
+    strict: false,
     deprecationErrors: true,
   },
 });
@@ -13,6 +13,11 @@ const client = new MongoClient(uri, {
 const connectDB = async () => {
   try {
     await client.connect();
+    await client
+      .db('ticketbari')
+      .collection('payments')
+      .createIndex({ transactionId: 1 }, { unique: true });
+
     console.log('You successfully connected to MongoDB!');
   } catch (error) {
     console.error('Failed to connect to MongoDB', error);
