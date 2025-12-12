@@ -22,6 +22,7 @@ if (!admin.apps.length) {
 }
 
 app.use(cors());
+
 app.use(express.json());
 
 connectDB()
