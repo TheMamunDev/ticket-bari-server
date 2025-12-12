@@ -15,7 +15,8 @@ const { verifyAdmin } = require('../middlewares/admin/middlewares.js');
 router.get('/:email', getUser);
 router.get('/', getAllUsers);
 router.patch('/:email', verifyToken, updateUser);
-router.get('/:email/role', getUserRole);
+
+router.get('/:email/role', verifyToken, getUserRole);
 router.post('/', insertUser);
 router.patch('/role/:id', verifyToken, verifyAdmin, updateRole);
 router.patch('/fraud/:id', verifyToken, verifyAdmin, markVendorAsFraud);

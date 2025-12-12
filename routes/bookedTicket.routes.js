@@ -10,11 +10,12 @@ const {
 const { verifyToken } = require('../middlewares/auth/middlewares.js');
 const { verifyVendor } = require('../middlewares/vendor/middlewares.js');
 
-router.get('/vendor/:email', getBookingByVendor);
+router.get('/vendor/:email', verifyToken, verifyVendor, getBookingByVendor);
 
 // user bookings by user email
 router.get('/:email', verifyToken, getBookedTickets);
-// book a ticket
+
+// book a ticket by user
 router.post('/', verifyToken, bookTicket);
 
 // update bookings as accept or reject by vendor

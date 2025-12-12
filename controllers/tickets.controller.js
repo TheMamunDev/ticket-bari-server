@@ -80,8 +80,16 @@ const getTicket = async (req, res) => {
     const id = req.params.id;
     const query = { _id: new ObjectId(id) };
     const result = await ticketsCollection.findOne(query);
+    if (result.status !== 'approved') {
+      return res
+        .status(409)
+        .send({ message: 'Opps! can not view this ticket' });
+    }
+    if (!result) {
+    }
     res.status(200).send(result);
   } catch (error) {
+    res.status(404).send({ message: 'Invalid Ticket ID' });
     console.log(error);
   }
 };
@@ -94,7 +102,7 @@ const getFeaturedTickets = async (req, res) => {
       .toArray();
     res.status(200).send(result);
   } catch (error) {
-    res.status(500).send({ error: error.message });
+    res.status(500).send({ message: error.message });
   }
 };
 
@@ -127,7 +135,6 @@ const addTicket = async (req, res) => {
     const ticket = req.body;
     console.log(ticket);
     const user = await usersCollection.findOne({ email: req.decoded_email });
-
     if (user.isFraud) {
       return res.status(409).send({
         message: 'Your account is flagged for fraud. You cannot add tickets.',

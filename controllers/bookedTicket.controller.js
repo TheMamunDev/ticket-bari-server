@@ -1,23 +1,53 @@
 const { ObjectId } = require('mongodb');
 const { db } = require('../config/db.js');
-const { m } = require('framer-motion');
+const { a } = require('framer-motion/client');
 const bookedTicketsCollection = db.collection('bookings');
+const usersCollection = db.collection('users');
+const ticketsCollection = db.collection('tickets');
 
+// insert user booking
 const bookTicket = async (req, res) => {
   try {
     const data = req.body;
+    console.log(data);
+    const ticketStatus = await ticketsCollection.findOne({
+      _id: new ObjectId(data.ticketId),
+    });
+    if (ticketStatus.status !== 'approved') {
+      return res.status(400).send({ massage: 'Ticket is not approved yet' });
+    }
+    const userRole = await usersCollection.findOne({
+      email: req.decoded_email,
+    });
+    if (userRole.role !== 'user') {
+      return res.status(400).send({
+        message: 'Only user can book a ticket',
+        yourRole: userRole.role,
+        type: 'ROLE_ERROR',
+      });
+    }
     const ticket = { ...data, paymentStatus: 'pending' };
     const result = await bookedTicketsCollection.insertOne(ticket);
     res.status(200).send(result);
   } catch (error) {
     console.log(error);
+    res.status(500).send({ message: 'Server error' });
   }
 };
 
+// get user my bookings
 const getBookedTickets = async (req, res) => {
   try {
     const email = req.params.email;
-    const query = { userEmail: email };
+    if (email !== req.decoded_email) {
+      return res.status(403).send({ message: 'forbidden access' });
+    }
+    console.log(req.query);
+    const { page = 1, limit = 9 } = req.query;
+    const skip = (page - 1) * limit;
+    const totalItems = await bookedTicketsCollection.countDocuments({
+      userEmail: email,
+    });
     const result = await bookedTicketsCollection
       .aggregate([
         { $match: { userEmail: email } },
@@ -55,8 +85,17 @@ const getBookedTickets = async (req, res) => {
           },
         },
       ])
+      .sort({ bookingDate: -1 })
+      .skip(skip)
+      .limit(limit)
       .toArray();
-    res.status(200).send(result);
+    res.status(200).send({
+      result,
+      totalItems,
+      totalPages: Math.ceil(totalItems / limit),
+      currentPage: page,
+      perPage: limit,
+    });
   } catch (error) {
     console.log(error);
   }
