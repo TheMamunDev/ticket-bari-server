@@ -1,6 +1,5 @@
 const { ObjectId } = require('mongodb');
 const { db } = require('../config/db.js');
-const { a } = require('framer-motion/client');
 const bookedTicketsCollection = db.collection('bookings');
 const usersCollection = db.collection('users');
 const ticketsCollection = db.collection('tickets');
