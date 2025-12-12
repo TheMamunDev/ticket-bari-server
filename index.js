@@ -6,30 +6,27 @@ const apiRoutes = require('./routes');
 const admin = require('firebase-admin');
 
 const app = express();
-const port = process.env.PORT || 3000;
 
 if (!admin.apps.length) {
-  const decoded = Buffer.from(process.env.FIREBASE_ADMIN, 'base64').toString(
-    'utf8'
-  );
-  const serviceAccount = JSON.parse(decoded);
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
+  if (!process.env.FIREBASE_ADMIN) {
+    console.error('FIREBASE_ADMIN env var missing!');
+  } else {
+    const decoded = Buffer.from(process.env.FIREBASE_ADMIN, 'base64').toString(
+      'utf8'
+    );
+    const serviceAccount = JSON.parse(decoded);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+  }
 }
 
 app.use(cors());
 app.use(express.json());
 
-app.use(async (req, res, next) => {
-  try {
-    await connectDB();
-    next();
-  } catch (error) {
-    console.error('Database connection error:', error);
-    res.status(500).send('Database connection error');
-  }
-});
+connectDB()
+  .then(() => console.log('DB Connected'))
+  .catch(err => console.error(err));
 
 app.use('/api', apiRoutes);
 
@@ -40,7 +37,6 @@ app.get('/', (req, res) => {
 module.exports = app;
 
 if (require.main === module) {
-  app.listen(port, () => {
-    console.log(`TicketBari server running at ${port}`);
-  });
+  const port = process.env.PORT || 5000;
+  app.listen(port, () => console.log(`Server running at ${port}`));
 }
