@@ -2,6 +2,7 @@ const { ObjectId } = require('mongodb');
 const { db } = require('../config/db.js');
 const ticketsCollection = db.collection('tickets');
 const usersCollection = db.collection('users');
+const parseDateTime = require('../utils/timeFormate.js');
 
 const getAllTickets = async (req, res) => {
   try {
@@ -77,6 +78,7 @@ const getTickets = async (req, res) => {
 
 const getTicket = async (req, res) => {
   try {
+    const now = new Date();
     const id = req.params.id;
     const query = { _id: new ObjectId(id) };
     const result = await ticketsCollection.findOne(query);
@@ -86,8 +88,27 @@ const getTicket = async (req, res) => {
         .send({ message: 'Opps! can not view this ticket' });
     }
     if (!result) {
+      return res.status(400).send({ message: 'Ticket not found' });
     }
-    res.status(200).send(result);
+    const relevantTickets = (
+      await ticketsCollection
+        .aggregate([
+          {
+            $match: {
+              status: 'approved',
+              _id: { $ne: new ObjectId(id) },
+              transportType: result.transportType,
+            },
+          },
+          { $sample: { size: 4 } },
+        ])
+        .toArray()
+    ).filter(ticket => {
+      const dt = parseDateTime(ticket.departureDate, ticket.departureTime);
+      return dt && dt > now;
+    });
+
+    res.status(200).send({ result, relevantTickets });
   } catch (error) {
     res.status(404).send({ message: 'Invalid Ticket ID' });
     console.log(error);

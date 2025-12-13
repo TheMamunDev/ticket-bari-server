@@ -25,7 +25,7 @@ const bookTicket = async (req, res) => {
         type: 'ROLE_ERROR',
       });
     }
-    const ticket = { ...data, paymentStatus: 'pending' };
+    const ticket = { ...data };
     const result = await bookedTicketsCollection.insertOne(ticket);
     res.status(200).send(result);
   } catch (error) {
