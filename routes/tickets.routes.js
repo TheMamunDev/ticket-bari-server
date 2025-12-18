@@ -12,7 +12,6 @@ const {
   getTickets,
   statusUpdate,
   setAdverties,
-  updateMany,
   getTrasports,
 } = require('../controllers/tickets.controller.js');
 const { verifyToken } = require('../middlewares/auth/middlewares.js');
@@ -20,11 +19,10 @@ const { verifyVendor } = require('../middlewares/vendor/middlewares.js');
 const { verifyAdmin } = require('../middlewares/admin/middlewares.js');
 
 router.get('/', getAllTickets);
-router.get('/vendor/:email', vendorTickets);
-router.patch('/many', updateMany);
-router.patch('/:id', updateTicket);
-router.patch('/status/:id', statusUpdate);
-router.patch('/advertise/:id', setAdverties);
+router.get('/vendor/:email', verifyToken, verifyVendor, vendorTickets);
+router.patch('/:id', verifyToken, verifyVendor, updateTicket);
+router.patch('/status/:id', verifyToken, verifyAdmin, statusUpdate);
+router.patch('/advertise/:id', verifyToken, verifyAdmin, setAdverties);
 router.get('/transport', getTrasports);
 router.get('/featured', getFeaturedTickets);
 router.get('/latest', getLatestTickets);

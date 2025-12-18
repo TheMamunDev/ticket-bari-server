@@ -4,6 +4,7 @@ const ticketsCollection = db.collection('tickets');
 const usersCollection = db.collection('users');
 const parseDateTime = require('../utils/timeFormate.js');
 
+// get all tickets  for all tickets page with search functionality and pagination
 const getAllTickets = async (req, res) => {
   try {
     const {
@@ -59,6 +60,7 @@ const getAllTickets = async (req, res) => {
   }
 };
 
+// get all transports for show in the search filter
 const getTrasports = async (req, res) => {
   try {
     const result = await ticketsCollection.distinct('transportType');
@@ -68,6 +70,7 @@ const getTrasports = async (req, res) => {
   }
 };
 
+// get all tickets for admin , protected
 const getTickets = async (req, res) => {
   const status = req.query.status;
   const query = {};
@@ -82,6 +85,7 @@ const getTickets = async (req, res) => {
     res.status(200).send(result);
   } catch (error) {
     console.log(error);
+    res.status(500).send({ message: 'Server error' });
   }
 };
 
@@ -149,6 +153,7 @@ const getLatestTickets = async (req, res) => {
   }
 };
 
+// get all tickets by vendor , protected
 const vendorTickets = async (req, res) => {
   try {
     const email = req.params.email;
@@ -157,6 +162,7 @@ const vendorTickets = async (req, res) => {
     res.status(200).send(result);
   } catch (error) {
     console.log(error);
+    res.status(500).send({ message: 'Server error' });
   }
 };
 
@@ -180,12 +186,12 @@ const addTicket = async (req, res) => {
   }
 };
 
+// update ticket by vendor ,protected
 const updateTicket = async (req, res) => {
   try {
     const id = req.params.id;
     const query = { _id: new ObjectId(id) };
     const { _id, ...data } = req.body;
-    console.log(data);
     const updatedData = {
       $set: data,
     };
@@ -196,7 +202,7 @@ const updateTicket = async (req, res) => {
   }
 };
 
-// update ticket status by admin
+// update ticket status by admin , protected
 const statusUpdate = async (req, res) => {
   try {
     const id = req.params.id;
@@ -209,9 +215,11 @@ const statusUpdate = async (req, res) => {
     res.send(result);
   } catch (error) {
     console.log(error);
+    res.status(500).send({ message: 'Server error' });
   }
 };
 
+// delete ticket by vendor , protected
 const deleteTicket = async (req, res) => {
   try {
     const id = req.params.id;
@@ -223,6 +231,7 @@ const deleteTicket = async (req, res) => {
   }
 };
 
+// set ticket as advertise by admin , protected
 const setAdverties = async (req, res) => {
   const id = req.params;
   const { currentStatus } = req.body;
@@ -262,26 +271,6 @@ const setAdverties = async (req, res) => {
   }
 };
 
-const updateMany = async (req, res) => {
-  try {
-    const filter = {}; // update all documents
-
-    const updateDoc = {
-      $set: {
-        vendorName: 'vendor',
-        vendorEmail: 'vendor@vendor.com',
-      },
-    };
-
-    const result = await ticketsCollection.updateMany(filter, updateDoc);
-
-    return res.send(result);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send({ message: 'Failed to update tickets' });
-  }
-};
-
 module.exports = {
   getAllTickets,
   updateTicket,
@@ -294,6 +283,5 @@ module.exports = {
   getTickets,
   statusUpdate,
   setAdverties,
-  updateMany,
   getTrasports,
 };
