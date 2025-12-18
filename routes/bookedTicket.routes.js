@@ -12,7 +12,6 @@ const { verifyVendor } = require('../middlewares/vendor/middlewares.js');
 const { verifyUser } = require('../middlewares/user/middlewares.js');
 
 // get bookings by vendor email
-
 router.get('/vendor/:email', verifyToken, verifyVendor, getBookingByVendor);
 
 // user bookings by user email

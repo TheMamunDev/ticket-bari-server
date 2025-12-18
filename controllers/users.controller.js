@@ -9,12 +9,14 @@ const getUser = async (req, res) => {
   res.status(200).send(result);
 };
 
+// get all users by admin , protected
 const getAllUsers = async (req, res) => {
   try {
     const result = await usersCollection.find().toArray();
     res.status(200).send(result);
   } catch (error) {
     console.log(error);
+    res.status(500).send({ message: 'Server error' });
   }
 };
 
@@ -44,6 +46,7 @@ const insertUser = async (req, res) => {
   }
 };
 
+// update user
 const updateUser = async (req, res) => {
   try {
     const email = req.params.email;
@@ -62,8 +65,7 @@ const updateUser = async (req, res) => {
   }
 };
 
-// update role by admin
-
+// update role by admin protected
 const updateRole = async (req, res) => {
   try {
     const id = req.params.id;
