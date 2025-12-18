@@ -59,6 +59,15 @@ const getAllTickets = async (req, res) => {
   }
 };
 
+const getTrasports = async (req, res) => {
+  try {
+    const result = await ticketsCollection.distinct('transportType');
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
 const getTickets = async (req, res) => {
   const status = req.query.status;
   const query = {};
@@ -82,11 +91,11 @@ const getTicket = async (req, res) => {
     const id = req.params.id;
     const query = { _id: new ObjectId(id) };
     const result = await ticketsCollection.findOne(query);
-    if (result.status !== 'approved') {
-      return res
-        .status(409)
-        .send({ message: 'Opps! can not view this ticket' });
-    }
+    // if (result.status !== 'approved') {
+    //   return res
+    //     .status(409)
+    //     .send({ message: 'Opps! can not view this ticket' });
+    // }
     if (!result) {
       return res.status(400).send({ message: 'Ticket not found' });
     }
@@ -253,6 +262,26 @@ const setAdverties = async (req, res) => {
   }
 };
 
+const updateMany = async (req, res) => {
+  try {
+    const filter = {}; // update all documents
+
+    const updateDoc = {
+      $set: {
+        vendorName: 'vendor',
+        vendorEmail: 'vendor@vendor.com',
+      },
+    };
+
+    const result = await ticketsCollection.updateMany(filter, updateDoc);
+
+    return res.send(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: 'Failed to update tickets' });
+  }
+};
+
 module.exports = {
   getAllTickets,
   updateTicket,
@@ -265,4 +294,6 @@ module.exports = {
   getTickets,
   statusUpdate,
   setAdverties,
+  updateMany,
+  getTrasports,
 };

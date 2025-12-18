@@ -34,11 +34,26 @@ const payment = async (req, res) => {
         available: ticket.quantity,
       });
     }
+    if (ticket.transportType === 'Bus') {
+      const unavailableSeats = data.bookedSeat.filter(seat =>
+        (ticket.bookedSeat || []).includes(seat)
+      );
+      if (unavailableSeats.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Failed to book. The following seats are already taken: ${unavailableSeats.join(
+            ', '
+          )}`,
+        });
+      }
+    }
+
     const paymentInfo = {
       ...data,
       paidAt: new Date(),
     };
     console.log(paymentInfo);
+
     const amount = parseInt(paymentInfo.totalPrice) * 100;
     const session = await stripe.checkout.sessions.create({
       line_items: [
@@ -57,6 +72,10 @@ const payment = async (req, res) => {
         bookingId: paymentInfo.bookingId,
         ticketId: paymentInfo.ticketId,
         quantity: paymentInfo.quantity,
+        userName: paymentInfo.userName,
+        bookedSeat: Array.isArray(paymentInfo.bookedSeat)
+          ? paymentInfo.bookedSeat.join(', ')
+          : paymentInfo.bookedSeat,
       },
       customer_email: paymentInfo.userEmail,
       mode: 'payment',
@@ -94,23 +113,43 @@ const paymentSuccess = async (req, res) => {
       bookingId: bookingId,
       ticketId: session.metadata.ticketId,
       ticketTitle: ticket.title,
+      userName: session.metadata.userName,
       userEmail: session.customer_email,
       amount: session.amount_total / 100,
       transactionId: transactionId,
       paymentStatus: 'paid',
       paidAt: new Date(),
     };
+    if (ticket.transportType === 'Bus') {
+      paymentInfo.bookedSeat = session.metadata.bookedSeat.split(', ');
+    }
     try {
       const paymentResult = await paymentsCollection.insertOne(paymentInfo);
       await bookedTicketsCollection.updateOne(
         { _id: new ObjectId(bookingId) },
-        { $set: { status: 'paid', paidAt: new Date() } }
+        {
+          $set: {
+            status: 'paid',
+            paidAt: new Date(),
+          },
+        }
       );
 
       const newQuantity = ticket.quantity - quantity;
+      const newSeats = session.metadata.bookedSeat.split(', ');
+      const updateDoc = {
+        $set: {
+          quantity: newQuantity,
+        },
+      };
+      if (ticket.transportType === 'Bus') {
+        updateDoc.$push = {
+          bookedSeat: { $each: newSeats },
+        };
+      }
       await ticketsCollection.updateOne(
         { _id: new ObjectId(session.metadata.ticketId) },
-        { $set: { quantity: newQuantity } }
+        updateDoc
       );
       return res.send({
         success: true,
@@ -121,7 +160,7 @@ const paymentSuccess = async (req, res) => {
       if (error.code === 11000) {
         return res.send({
           success: false,
-          message: 'Payment already processed (Duplicate Prevention)',
+          message: 'Payment already processed',
         });
       }
       console.error(error);

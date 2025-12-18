@@ -5,9 +5,13 @@ const {
   getBookedTickets,
   getBookingByVendor,
   updateTicket,
+  deleteBooking,
 } = require('../controllers/bookedTicket.controller.js');
 const { verifyToken } = require('../middlewares/auth/middlewares.js');
 const { verifyVendor } = require('../middlewares/vendor/middlewares.js');
+const { verifyUser } = require('../middlewares/user/middlewares.js');
+
+// get bookings by vendor email
 
 router.get('/vendor/:email', verifyToken, verifyVendor, getBookingByVendor);
 
@@ -19,5 +23,8 @@ router.post('/', verifyToken, bookTicket);
 
 // update bookings as accept or reject by vendor
 router.patch('/:id', verifyToken, verifyVendor, updateTicket);
+
+// delete booking by user
+router.delete('/:id', verifyToken, verifyUser, deleteBooking);
 
 module.exports = router;

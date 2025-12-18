@@ -41,7 +41,6 @@ const getBookedTickets = async (req, res) => {
     if (email !== req.decoded_email) {
       return res.status(403).send({ message: 'forbidden access' });
     }
-    console.log(req.query);
     const { page = 1, limit = 9 } = req.query;
     const skip = (page - 1) * limit;
     const totalItems = await bookedTicketsCollection.countDocuments({
@@ -78,9 +77,13 @@ const getBookedTickets = async (req, res) => {
             status: 1,
             bookingDate: 1,
             unitPrice: 1,
+            bookedSeat: 1,
             'ticketInfo.departureTime': 1,
             'ticketInfo.departureDate': 1,
             'ticketInfo.image': 1,
+            'ticketInfo.from': 1,
+            'ticketInfo.to': 1,
+            'ticketInfo.bookedSeat': 1,
           },
         },
       ])
@@ -127,9 +130,21 @@ const updateTicket = async (req, res) => {
   }
 };
 
+const deleteBooking = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) };
+    const result = await bookedTicketsCollection.deleteOne(query);
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({ error: error.message });
+  }
+};
+
 module.exports = {
   bookTicket,
   getBookedTickets,
   getBookingByVendor,
   updateTicket,
+  deleteBooking,
 };
