@@ -12,7 +12,10 @@ const getUser = async (req, res) => {
 // get all users by admin , protected
 const getAllUsers = async (req, res) => {
   try {
-    const result = await usersCollection.find().toArray();
+    const result = await usersCollection
+      .find()
+      .sort({ joinDate: -1 })
+      .toArray();
     res.status(200).send(result);
   } catch (error) {
     console.log(error);

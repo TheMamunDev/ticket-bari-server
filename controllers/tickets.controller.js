@@ -158,7 +158,10 @@ const vendorTickets = async (req, res) => {
   try {
     const email = req.params.email;
     const query = { vendorEmail: email };
-    const result = await ticketsCollection.find(query).toArray();
+    const result = await ticketsCollection
+      .find(query)
+      .sort({ createdAt: -1 })
+      .toArray();
     res.status(200).send(result);
   } catch (error) {
     console.log(error);
@@ -169,7 +172,6 @@ const vendorTickets = async (req, res) => {
 const addTicket = async (req, res) => {
   try {
     const ticket = req.body;
-    console.log(ticket);
     const user = await usersCollection.findOne({ email: req.decoded_email });
     if (user.isFraud) {
       return res.status(409).send({

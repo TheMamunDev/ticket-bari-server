@@ -107,7 +107,12 @@ const getBookingByVendor = async (req, res) => {
   try {
     const email = req.params.email;
     const query = { vendorEmail: email };
-    const result = await bookedTicketsCollection.find(query).toArray();
+    const result = await bookedTicketsCollection
+      .find(query)
+      .sort({
+        bookingDate: -1,
+      })
+      .toArray();
     res.status(200).send(result);
   } catch (error) {
     console.log(error);
