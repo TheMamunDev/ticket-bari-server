@@ -2,6 +2,7 @@ const { ObjectId } = require('mongodb');
 const { db } = require('../config/db.js');
 const ticketsCollection = db.collection('tickets');
 const usersCollection = db.collection('users');
+const reviewsCollection = db.collection('reviews');
 const parseDateTime = require('../utils/timeFormate.js');
 
 // get all tickets  for all tickets page with search functionality and pagination
@@ -95,11 +96,7 @@ const getTicket = async (req, res) => {
     const id = req.params.id;
     const query = { _id: new ObjectId(id) };
     const result = await ticketsCollection.findOne(query);
-    // if (result.status !== 'approved') {
-    //   return res
-    //     .status(409)
-    //     .send({ message: 'Opps! can not view this ticket' });
-    // }
+
     if (!result) {
       return res.status(400).send({ message: 'Ticket not found' });
     }
@@ -120,8 +117,8 @@ const getTicket = async (req, res) => {
       const dt = parseDateTime(ticket.departureDate, ticket.departureTime);
       return dt && dt > now;
     });
-
-    res.status(200).send({ result, relevantTickets });
+    const reviews = await reviewsCollection.find({ ticketId: id }).limit(3).toArray();
+    res.status(200).send({ result, relevantTickets, reviews });
   } catch (error) {
     res.status(404).send({ message: 'Invalid Ticket ID' });
     console.log(error);

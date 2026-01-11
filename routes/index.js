@@ -6,6 +6,7 @@ const bookedTicketRouter = require('../routes/bookedTicket.routes.js');
 const paymentRouter = require('../routes/pay.routes.js');
 const userPaymentRouter = require('../routes/payment.routes.js');
 const statsRouter = require('../routes/stats.routes.js');
+const reviewsRouter = require('../routes/reviews.routes.js');
 
 router.get('/', (req, res) => {
   res.send('TicketBari Server is running!');
@@ -17,5 +18,6 @@ router.use('/bookings', bookedTicketRouter);
 router.use('/pay', paymentRouter);
 router.use('/payment', userPaymentRouter);
 router.use('/stats', statsRouter);
+router.use('/reviews', reviewsRouter);
 
 module.exports = router;

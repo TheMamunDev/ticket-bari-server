@@ -27,7 +27,7 @@ router.get('/transport', getTrasports);
 router.get('/featured', getFeaturedTickets);
 router.get('/latest', getLatestTickets);
 router.get('/all', verifyToken, verifyAdmin, getTickets);
-router.get('/:id', verifyToken, getTicket);
+router.get('/:id', getTicket);
 router.post('/', verifyToken, verifyVendor, addTicket);
 router.delete('/:id', verifyToken, verifyVendor, deleteTicket);
 
